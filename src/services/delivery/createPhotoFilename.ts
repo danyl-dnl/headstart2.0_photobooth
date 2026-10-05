@@ -1,9 +1,9 @@
-import type { CapturedPhoto } from '../../types/photo';
+import type { CapturedPhotoData } from '../../types/photo';
 
 let filenameSequence = 0;
 
 /** Builds an identifiable, filesystem-safe name without including guest data. */
-export function createPhotoFilename(photo: Pick<CapturedPhoto, 'capturedAt' | 'mimeType'>): string {
+export function createPhotoFilename(photo: Pick<CapturedPhotoData, 'capturedAt' | 'mimeType'>): string {
   const timestamp = new Date(photo.capturedAt)
     .toISOString()
     .replace(/[-:]/g, '')

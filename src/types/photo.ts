@@ -9,10 +9,10 @@ export type CapturedPhotoData = {
 
 /** A temporary photo owned by the current booth session. */
 export type CapturedPhoto = CapturedPhotoData & {
+  id: string;
   objectUrl: string;
 };
 
 export type PhotoSession = {
-  photo: CapturedPhoto | null;
-  isPhotoSelected: boolean;
+  photos: CapturedPhoto[];
 };

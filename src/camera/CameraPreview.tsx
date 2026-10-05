@@ -4,11 +4,13 @@ import ActionButton from '../components/ActionButton';
 import RouteGraphic from '../components/RouteGraphic';
 import type { CapturedPhotoData } from '../types/photo';
 import { captureVideoFrame } from './captureFrame';
+import { createCaptureAttemptGate } from './captureAttemptGate';
 
 export type CameraStatus = 'idle' | 'requesting' | 'active' | 'denied' | 'not-found' | 'in-use' | 'error';
 
 type CameraPreviewProps = {
   captureRequest: number;
+  captureImmediatelyRequest: number;
   onCameraActiveChange: (isActive: boolean) => void;
   onCaptureStateChange: (isCapturing: boolean) => void;
   onPhotoCaptured: (photo: CapturedPhotoData) => void;
@@ -68,16 +70,19 @@ function getCameraStatus(error: unknown): Exclude<CameraStatus, 'idle' | 'reques
 
 export default function CameraPreview({
   captureRequest,
+  captureImmediatelyRequest,
   onCameraActiveChange,
   onCaptureStateChange,
   onPhotoCaptured,
 }: CameraPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const trackEndHandlersRef = useRef(new Map<MediaStreamTrack, () => void>());
   const requestRef = useRef(0);
+  const cameraAttemptInProgressRef = useRef(false);
   const timerRef = useRef<number | null>(null);
   const captureRef = useRef(0);
-  const isCapturingRef = useRef(false);
+  const captureAttemptGateRef = useRef(createCaptureAttemptGate());
   const [status, setStatus] = useState<CameraStatus>('idle');
   const [countdown, setCountdown] = useState<number | null>(null);
 
@@ -90,7 +95,12 @@ export default function CameraPreview({
     const stream = streamRef.current;
 
     if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
+      stream.getTracks().forEach((track) => {
+        const handleEnded = trackEndHandlersRef.current.get(track);
+        if (handleEnded) track.removeEventListener('ended', handleEnded);
+        track.stop();
+      });
+      trackEndHandlersRef.current.clear();
       streamRef.current = null;
     }
 
@@ -110,13 +120,15 @@ export default function CameraPreview({
 
     setCountdown(null);
 
-    if (isCapturingRef.current) {
-      isCapturingRef.current = false;
+    if (captureAttemptGateRef.current.isActive) {
+      captureAttemptGateRef.current.release();
       onCaptureStateChange(false);
     }
   }, [onCaptureStateChange]);
 
   const startCamera = useCallback(async () => {
+    if (cameraAttemptInProgressRef.current) return;
+    cameraAttemptInProgressRef.current = true;
     const requestId = requestRef.current + 1;
     requestRef.current = requestId;
     releaseCamera();
@@ -124,6 +136,7 @@ export default function CameraPreview({
     if (!navigator.mediaDevices?.getUserMedia) {
       updateStatus('error');
       console.error('Camera API is not available in this renderer.');
+      cameraAttemptInProgressRef.current = false;
       return;
     }
 
@@ -152,19 +165,27 @@ export default function CameraPreview({
         if (streamRef.current !== stream) return;
 
         console.error('The active camera stream stopped unexpectedly.');
+        requestRef.current += 1;
+        cameraAttemptInProgressRef.current = false;
         cancelCapture();
         releaseCamera();
         updateStatus('error');
       };
       stream.getVideoTracks().forEach((track) => {
         track.addEventListener('ended', handleUnexpectedTrackEnd, { once: true });
+        trackEndHandlersRef.current.set(track, handleUnexpectedTrackEnd);
       });
       video.srcObject = stream;
       await video.play();
 
       if (requestId !== requestRef.current) {
-        releaseCamera();
+        if (streamRef.current === stream) releaseCamera();
+        else stream.getTracks().forEach((track) => track.stop());
         return;
+      }
+
+      if (stream.getVideoTracks().every((track) => track.readyState !== 'live')) {
+        throw new Error('Camera track ended before the preview became ready.');
       }
 
       updateStatus('active');
@@ -176,21 +197,24 @@ export default function CameraPreview({
       releaseCamera();
       console.error('Unable to start camera preview.', error);
       updateStatus(getCameraStatus(error));
+    } finally {
+      if (requestId === requestRef.current) cameraAttemptInProgressRef.current = false;
     }
   }, [cancelCapture, releaseCamera, updateStatus]);
 
-  const startCountdown = useCallback(() => {
+  const startCapture = useCallback((withCountdown: boolean) => {
     const video = videoRef.current;
 
     // A repeated tap during the active countdown is a no-op. It must not be
     // treated as a camera-readiness failure or release the live stream.
-    if (isCapturingRef.current) return;
+    if (captureAttemptGateRef.current.isActive) return;
 
     if (
       status !== 'active'
       || !video
       || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
     ) {
+      onCaptureStateChange(false);
       if (status === 'active') {
         releaseCamera();
         updateStatus('error');
@@ -199,11 +223,36 @@ export default function CameraPreview({
       return;
     }
 
+    if (!captureAttemptGateRef.current.acquire()) return;
     const captureId = captureRef.current + 1;
     captureRef.current = captureId;
-    isCapturingRef.current = true;
     onCaptureStateChange(true);
-    setCountdown(3);
+    setCountdown(withCountdown ? 3 : null);
+
+    const captureFrame = async () => {
+      if (captureId !== captureRef.current) return;
+      timerRef.current = null;
+      setCountdown(null);
+
+      try {
+        const photo = await captureVideoFrame(video);
+
+        if (captureId !== captureRef.current) return;
+
+        onPhotoCaptured(photo);
+      } catch (error) {
+        if (captureId === captureRef.current) {
+          releaseCamera();
+          updateStatus('error');
+          console.error('Unable to capture the current camera frame.', error);
+        }
+      } finally {
+        if (captureId === captureRef.current) {
+          captureAttemptGateRef.current.release();
+          onCaptureStateChange(false);
+        }
+      }
+    };
 
     const showNextNumber = (currentNumber: number) => {
       timerRef.current = window.setTimeout(async () => {
@@ -217,33 +266,12 @@ export default function CameraPreview({
           return;
         }
 
-        timerRef.current = null;
-        setCountdown(null);
-
-        try {
-          const photo = await captureVideoFrame(video);
-
-          if (captureId !== captureRef.current) {
-            return;
-          }
-
-          onPhotoCaptured(photo);
-        } catch (error) {
-          if (captureId === captureRef.current) {
-            releaseCamera();
-            updateStatus('error');
-            console.error('Unable to capture the current camera frame.', error);
-          }
-        } finally {
-          if (captureId === captureRef.current) {
-            isCapturingRef.current = false;
-            onCaptureStateChange(false);
-          }
-        }
+        await captureFrame();
       }, 1000);
     };
 
-    showNextNumber(3);
+    if (withCountdown) showNextNumber(3);
+    else void captureFrame();
   }, [onCaptureStateChange, onPhotoCaptured, releaseCamera, status, updateStatus]);
 
   useEffect(() => {
@@ -251,6 +279,9 @@ export default function CameraPreview({
 
     return () => {
       requestRef.current += 1;
+      // React.StrictMode replays effects in development. Release the lock so the
+      // replacement effect can start a fresh request if getUserMedia is pending.
+      cameraAttemptInProgressRef.current = false;
       cancelCapture();
       releaseCamera();
       onCameraActiveChange(false);
@@ -272,9 +303,15 @@ export default function CameraPreview({
 
   useEffect(() => {
     if (captureRequest > 0) {
-      startCountdown();
+      startCapture(true);
     }
-  }, [captureRequest, startCountdown]);
+  }, [captureRequest, startCapture]);
+
+  useEffect(() => {
+    if (captureImmediatelyRequest > 0) {
+      startCapture(false);
+    }
+  }, [captureImmediatelyRequest, startCapture]);
 
   const isActive = status === 'active';
   const isLoading = status === 'idle' || status === 'requesting';

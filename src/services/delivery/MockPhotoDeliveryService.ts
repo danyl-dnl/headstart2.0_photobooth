@@ -1,8 +1,7 @@
-import type { CapturedPhoto } from '../../types/photo';
+import type { CapturedPhotoData } from '../../types/photo';
 import type { PhotoDeliveryResult, PhotoDeliveryService } from './PhotoDeliveryService';
 import { createPhotoFilename } from './createPhotoFilename.ts';
-
-const supportedMimeTypes = new Set(['image/jpeg', 'image/png']);
+import { getCapturedPhotoValidationError } from '../../types/photoSession';
 const mockDeliveryDelayMs = 250;
 
 function failure(error: string): PhotoDeliveryResult {
@@ -11,18 +10,13 @@ function failure(error: string): PhotoDeliveryResult {
 
 /** Local-only adapter. It validates and simulates delivery without storing or transmitting the Blob. */
 export class MockPhotoDeliveryService implements PhotoDeliveryService {
-  async deliver(photo: CapturedPhoto): Promise<PhotoDeliveryResult> {
-    if (!photo || typeof photo !== 'object') return failure('No captured photo was provided.');
-
-    const blob = photo.blob;
-    if (!(blob instanceof Blob) || blob.size === 0) return failure('The captured photo is empty.');
-
-    const mimeType = (blob.type || photo.mimeType).toLowerCase();
-    if (!supportedMimeTypes.has(mimeType)) return failure('The captured photo format is unsupported.');
+  async deliver(photo: CapturedPhotoData): Promise<PhotoDeliveryResult> {
+    const validationError = getCapturedPhotoValidationError(photo);
+    if (validationError) return failure(validationError);
 
     try {
       await new Promise<void>((resolve) => globalThis.setTimeout(resolve, mockDeliveryDelayMs));
-      const filename = createPhotoFilename({ ...photo, mimeType });
+      const filename = createPhotoFilename({ ...photo, mimeType: (photo.blob.type || photo.mimeType).toLowerCase() });
       return {
         status: 'success',
         deliveryId: `mock-${globalThis.crypto.randomUUID()}`,

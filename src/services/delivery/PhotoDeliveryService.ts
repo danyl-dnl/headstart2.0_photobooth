@@ -1,4 +1,4 @@
-import type { CapturedPhoto } from '../../types/photo';
+import type { CapturedPhotoData } from '../../types/photo';
 
 export type PhotoDeliveryResult =
   | { status: 'success'; deliveryId: string; filename: string }
@@ -6,5 +6,5 @@ export type PhotoDeliveryResult =
 
 /** A destination-neutral boundary for delivering an in-memory captured photo. */
 export interface PhotoDeliveryService {
-  deliver(photo: CapturedPhoto): Promise<PhotoDeliveryResult>;
+  deliver(photo: CapturedPhotoData): Promise<PhotoDeliveryResult>;
 }

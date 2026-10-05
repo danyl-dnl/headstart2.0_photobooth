@@ -17,7 +17,7 @@ const { createPhotoFilename } = require('../src/services/delivery/createPhotoFil
 const capturedAt = Date.UTC(2026, 9, 5, 13, 45, 1);
 
 function createPhoto(blob, mimeType = blob.type) {
-  return { blob, mimeType, capturedAt, width: 640, height: 480, objectUrl: '' };
+  return { id: globalThis.crypto.randomUUID(), blob, mimeType, capturedAt, width: 640, height: 480, objectUrl: '' };
 }
 
 test('valid photo succeeds through the local mock adapter without reading or changing its Blob', async () => {
@@ -43,6 +43,16 @@ test('empty Blob returns a failure result', async () => {
 test('unsupported MIME type returns a failure result', async () => {
   const result = await new MockPhotoDeliveryService().deliver(createPhoto(new Blob(['data'], { type: 'text/plain' })));
   assert.equal(result.status, 'failed');
+});
+
+test('delivery accepts the final composed Blob without reading or copying it', async () => {
+  const composition = createPhoto(new Blob(['full photo strip'], { type: 'image/jpeg' }));
+  Object.defineProperty(composition.blob, 'arrayBuffer', { value: () => { throw new Error('Delivery must preserve the composed Blob'); } });
+  const result = await new MockPhotoDeliveryService().deliver(composition);
+  assert.equal(result.status, 'success');
+  if (result.status !== 'success') return;
+  assert.match(result.filename, /\.jpg$/);
+  assert.equal(composition.blob.size, 16);
 });
 
 test('filename is safe, format-specific, and unique for repeated generations', () => {
