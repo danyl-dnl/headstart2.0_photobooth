@@ -10,22 +10,23 @@ type RouteGraphicProps = {
 
 type MarkerPosition = { x: number; y: number; progress: number };
 
-const roadPath = 'M 12 68 L 84 48 H 230 L 306 14';
+// One continuous route gives the marker and every lane marking the same path geometry.
+const roadPath = 'M 8 68 C 38 68 52 50 83 50 S 125 64 151 54 S 190 29 220 35 S 264 57 281 43 S 300 21 310 12';
 const markers: Record<RouteStage, MarkerPosition> = {
-  welcome: { x: 12, y: 68, progress: 0 },
-  camera: { x: 84, y: 48, progress: 25 },
-  countdown: { x: 84, y: 48, progress: 25 },
-  preview: { x: 248, y: 40, progress: 85 },
-  finish: { x: 306, y: 14, progress: 100 },
+  welcome: { x: 8, y: 68, progress: 0 },
+  camera: { x: 83, y: 50, progress: 25 },
+  countdown: { x: 83, y: 50, progress: 25 },
+  preview: { x: 281, y: 43, progress: 85 },
+  finish: { x: 310, y: 12, progress: 100 },
 };
 
 export default function RouteGraphic({ stage, countdown, className = '' }: RouteGraphicProps) {
   const countdownPosition = countdown === 3
-    ? { x: 120, y: 48, progress: 38 }
+    ? { x: 120, y: 57, progress: 38 }
     : countdown === 2
-      ? { x: 164, y: 48, progress: 53 }
+      ? { x: 164, y: 47, progress: 53 }
       : countdown === 1
-        ? { x: 208, y: 48, progress: 69 }
+        ? { x: 208, y: 33, progress: 69 }
         : markers.countdown;
   const marker = stage === 'countdown' ? countdownPosition : markers[stage];
 
@@ -37,19 +38,42 @@ export default function RouteGraphic({ stage, countdown, className = '' }: Route
       aria-label={stage === 'finish' ? 'Finish line reached' : 'Race route progress'}
       style={{ '--route-progress': marker.progress } as CSSProperties}
     >
+      <defs>
+        <pattern id="route-grain" width="7" height="7" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="2" r=".45" fill="var(--cream)" opacity=".22" />
+          <circle cx="5" cy="5" r=".35" fill="var(--cream)" opacity=".16" />
+        </pattern>
+        <pattern id="route-checks" width="6" height="6" patternUnits="userSpaceOnUse">
+          <rect width="6" height="6" fill="var(--cream)" />
+          <path d="M0 0h3v3H0zM3 3h3v3H3z" fill="var(--ink)" />
+        </pattern>
+      </defs>
+      <path className="route-graphic__shadow" d={roadPath} pathLength="100" />
       <path className="route-graphic__road-edge" d={roadPath} pathLength="100" />
+      <path className="route-graphic__shoulder" d={roadPath} pathLength="100" />
       <path className="route-graphic__road" d={roadPath} pathLength="100" />
+      <path className="route-graphic__texture" d={roadPath} pathLength="100" />
       <path className="route-graphic__lane" d={roadPath} pathLength="100" />
       <path className="route-graphic__progress" d={roadPath} pathLength="100" />
       {stage === 'welcome' && (
-        <circle className="route-graphic__runner" cx="12" cy="68" r="4">
-          <animateMotion dur="1.7s" begin="0.3s" fill="freeze" path={roadPath} />
+        <circle className="route-graphic__runner" cx="0" cy="0" r="3.5">
+          <animateMotion
+            dur="5.8s"
+            begin="0s"
+            repeatCount="indefinite"
+            calcMode="spline"
+            keyTimes="0; 0.82; 1"
+            keyPoints="0; 1; 0"
+            keySplines="0.42 0 0.58 1; 0.4 0 0.7 1"
+            path={roadPath}
+          />
         </circle>
       )}
       <circle className="route-graphic__marker-halo" cx={marker.x} cy={marker.y} r="8" />
       <circle className="route-graphic__marker" cx={marker.x} cy={marker.y} r="4" />
       <g className="route-graphic__finish" aria-hidden="true">
-        <path d="M299 7h6v6h-6zM305 13h6v6h-6zM299 19h6v6h-6zM311 7h6v6h-6zM311 19h6v6h-6z" />
+        <path d="M297 7h12v12h-12z" fill="url(#route-checks)" />
+        <path d="M310 7v8m0 0 5-3-5-2" fill="none" stroke="var(--cream)" strokeWidth="1.4" />
       </g>
     </svg>
   );

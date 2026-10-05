@@ -2,6 +2,7 @@ import { CameraOff, LoaderCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ActionButton from '../components/ActionButton';
 import RouteGraphic from '../components/RouteGraphic';
+import type { CapturedPhotoData } from '../types/photo';
 import { captureVideoFrame } from './captureFrame';
 
 export type CameraStatus = 'idle' | 'requesting' | 'active' | 'denied' | 'not-found' | 'in-use' | 'error';
@@ -10,7 +11,7 @@ type CameraPreviewProps = {
   captureRequest: number;
   onCameraActiveChange: (isActive: boolean) => void;
   onCaptureStateChange: (isCapturing: boolean) => void;
-  onPhotoCaptured: (photo: Blob) => void;
+  onPhotoCaptured: (photo: CapturedPhotoData) => void;
 };
 
 type CameraMessage = {
@@ -29,7 +30,7 @@ const statusMessages: Record<Exclude<CameraStatus, 'active'>, CameraMessage> = {
   },
   denied: {
     title: 'Camera access is required',
-    description: 'Please allow camera access and try again.',
+    description: 'Camera access is unavailable. Please ask a staff member for assistance.',
   },
   'not-found': {
     title: 'Camera not found',
@@ -147,6 +148,17 @@ export default function CameraPreview({
       }
 
       streamRef.current = stream;
+      const handleUnexpectedTrackEnd = () => {
+        if (streamRef.current !== stream) return;
+
+        console.error('The active camera stream stopped unexpectedly.');
+        cancelCapture();
+        releaseCamera();
+        updateStatus('error');
+      };
+      stream.getVideoTracks().forEach((track) => {
+        track.addEventListener('ended', handleUnexpectedTrackEnd, { once: true });
+      });
       video.srcObject = stream;
       await video.play();
 
@@ -165,14 +177,17 @@ export default function CameraPreview({
       console.error('Unable to start camera preview.', error);
       updateStatus(getCameraStatus(error));
     }
-  }, [releaseCamera, updateStatus]);
+  }, [cancelCapture, releaseCamera, updateStatus]);
 
   const startCountdown = useCallback(() => {
     const video = videoRef.current;
 
+    // A repeated tap during the active countdown is a no-op. It must not be
+    // treated as a camera-readiness failure or release the live stream.
+    if (isCapturingRef.current) return;
+
     if (
-      isCapturingRef.current
-      || status !== 'active'
+      status !== 'active'
       || !video
       || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
     ) {
@@ -241,6 +256,19 @@ export default function CameraPreview({
       onCameraActiveChange(false);
     };
   }, [cancelCapture, onCameraActiveChange, releaseCamera, startCamera]);
+
+  useEffect(() => {
+    const cancelWhenInactive = () => {
+      if (document.visibilityState === 'hidden') cancelCapture();
+    };
+
+    window.addEventListener('blur', cancelCapture);
+    document.addEventListener('visibilitychange', cancelWhenInactive);
+    return () => {
+      window.removeEventListener('blur', cancelCapture);
+      document.removeEventListener('visibilitychange', cancelWhenInactive);
+    };
+  }, [cancelCapture]);
 
   useEffect(() => {
     if (captureRequest > 0) {

@@ -152,8 +152,8 @@ button:focus-visible {
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%);
 }
 
-.action-button:hover { transform: translateX(3px); }
-.action-button:active { transform: translateX(1px) scale(.985); }
+.action-button:hover { transform: translateX(2px); }
+.action-button:active { transform: translateX(1px) scale(.988); }
 .action-button:disabled { cursor: not-allowed; opacity: .5; transform: none; }
 .action-button--primary { color: var(--red); background: var(--cream); }
 .action-button--primary:hover { color: var(--ink); background: #fffaf2; }
@@ -246,6 +246,7 @@ button:focus-visible {
   height: 1px;
   background: rgb(245 238 227 / 31%);
   transform: rotate(-34deg);
+  animation: stripe-drift 13s ease-in-out infinite alternate;
 }
 
 .welcome-screen__road-stripe--one { top: 36%; right: -43%; }
@@ -318,10 +319,11 @@ button:focus-visible {
   line-height: .84;
   text-transform: uppercase;
   text-shadow: 5px 5px 0 var(--red-dark), 9px 9px 0 rgb(23 13 16 / 40%);
-  animation: poster-type-arrive .8s var(--ease-race) both;
 }
 
-.welcome-screen__title > span:last-child { padding-left: .08em; }
+.welcome-screen__title > span { display: block; clip-path: inset(0); }
+.welcome-screen__title > span:first-child { animation: poster-type-arrive .48s var(--ease-race) both; }
+.welcome-screen__title > span:last-child { padding-left: .08em; animation: poster-type-follow .5s .09s var(--ease-race) both; }
 .welcome-screen__title-dot { color: var(--red-hot); }
 
 .welcome-screen__subline {
@@ -338,6 +340,7 @@ button:focus-visible {
   letter-spacing: -.045em;
   line-height: .9;
   text-shadow: 1px 1px 0 var(--cream-dim);
+  animation: version-settle .38s .2s var(--ease-race) both;
 }
 
 .welcome-screen__distances {
@@ -364,6 +367,9 @@ button:focus-visible {
 }
 
 .welcome-screen__button { min-width: 244px; min-height: 68px; justify-content: space-between; padding: 16px 22px 16px 24px; font-size: 13px; }
+.welcome-screen__button svg { transition: transform .2s var(--ease-race); }
+.welcome-screen__button:hover svg { transform: translateX(4px); }
+.welcome-screen__button:active svg { transform: translateX(2px); }
 .welcome-screen__tap-hint { color: var(--cream-dim); font-family: var(--mono); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
 .welcome-screen__tap-hint span { display: inline-block; margin-left: 6px; color: var(--cream); font-size: 14px; }
 .welcome-screen__side-index { position: absolute; z-index: 3; top: 50%; right: 10px; color: var(--cream-dim); font-family: var(--mono); font-size: 8px; letter-spacing: .12em; writing-mode: vertical-rl; }
@@ -381,14 +387,19 @@ button:focus-visible {
 .route-graphic { display: block; width: min(100%, 330px); height: 70px; overflow: visible; }
 .welcome-screen__route-row .route-graphic { flex: 1 1 0; min-width: 0; width: 100%; height: 79px; }
 
-.route-graphic__road-edge { fill: none; stroke: var(--cream); stroke-width: 25; stroke-linecap: butt; stroke-linejoin: bevel; }
-.route-graphic__road { fill: none; stroke: var(--ink-soft); stroke-width: 21; stroke-linecap: butt; stroke-linejoin: bevel; }
-.route-graphic__lane { fill: none; stroke: rgb(245 238 227 / 45%); stroke-width: 1; stroke-dasharray: 3 5; }
-.route-graphic__progress { fill: none; stroke: var(--red-hot); stroke-width: 2.5; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--route-progress)); transition: stroke-dashoffset .72s var(--ease-race); }
+.route-graphic__shadow { fill: none; stroke: rgb(23 13 16 / 40%); stroke-width: 31; stroke-linecap: round; stroke-linejoin: round; transform: translateY(2px); }
+.route-graphic__road-edge { fill: none; stroke: var(--cream); stroke-width: 28; stroke-linecap: round; stroke-linejoin: round; }
+.route-graphic__shoulder { fill: none; stroke: var(--red-dark); stroke-width: 23; stroke-linecap: round; stroke-linejoin: round; }
+.route-graphic__road { fill: none; stroke: var(--ink-soft); stroke-width: 19; stroke-linecap: round; stroke-linejoin: round; }
+.route-graphic__texture { fill: none; stroke: url(#route-grain); stroke-width: 17; stroke-linecap: round; stroke-linejoin: round; opacity: .42; }
+.route-graphic__lane { fill: none; stroke: rgb(245 238 227 / 62%); stroke-width: 1.2; stroke-dasharray: 5 5; stroke-linecap: butt; }
+.route-graphic__progress { fill: none; stroke: var(--red-hot); stroke-width: 2.2; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--route-progress)); stroke-linecap: round; transition: stroke-dashoffset .72s var(--ease-race); }
+.route-graphic--welcome .route-graphic__progress { stroke-dashoffset: 100; animation: route-progress 5.8s .3s linear infinite; }
 .route-graphic__marker-halo { fill: rgb(214 60 62 / 40%); transition: cx .55s var(--ease-race), cy .55s var(--ease-race); }
 .route-graphic__marker { fill: var(--cream); stroke: var(--red-hot); stroke-width: 1.6; transition: cx .55s var(--ease-race), cy .55s var(--ease-race); }
-.route-graphic__runner { fill: var(--cream); stroke: var(--red-hot); stroke-width: 2; }
+.route-graphic__runner { fill: var(--cream); stroke: var(--red-hot); stroke-width: 1.8; filter: drop-shadow(0 0 2px rgb(214 60 62 / 65%)); }
 .route-graphic__finish { fill: var(--cream); stroke: var(--ink); stroke-width: .7; }
+.route-graphic__finish path:first-child { transform-box: fill-box; transform-origin: center; }
 .route-graphic--welcome .route-graphic__marker,
 .route-graphic--welcome .route-graphic__marker-halo { opacity: 0; }
 .route-graphic--finish .route-graphic__marker-halo { animation: finish-pulse .8s ease-out 1 both; }
@@ -420,7 +431,7 @@ button:focus-visible {
 .status-indicator { display: inline-flex; min-height: 19px; align-items: center; gap: 8px; color: var(--cream-dim); font-family: var(--mono); font-size: 9px; letter-spacing: .045em; text-transform: uppercase; }
 .status-indicator--ready { color: var(--cream); }
 .status-dot { display: inline-block; width: 8px; height: 8px; flex: 0 0 auto; background: var(--red-hot); transform: rotate(45deg); }
-.status-indicator--ready .status-dot { background: var(--cream); box-shadow: 0 0 0 4px rgb(245 238 227 / 10%); }
+.status-indicator--ready .status-dot { background: var(--cream); box-shadow: 0 0 0 4px rgb(245 238 227 / 10%); animation: status-breathe 2.8s ease-in-out infinite; }
 .camera-screen__progress .route-graphic { width: 232px; height: 52px; }
 
 .media-placeholder {
@@ -470,7 +481,7 @@ button:focus-visible {
 .camera-preview__countdown::after { position: absolute; z-index: 5; inset: 0; background: white; content: ''; opacity: 0; }
 .camera-preview__countdown[data-countdown='1']::after { animation: shutter-flash 145ms ease-out .78s both; }
 .camera-preview__countdown-label { position: relative; z-index: 1; margin: 0 0 2px; color: var(--cream-dim); font-family: var(--mono); font-size: clamp(10px, 1.3vw, 13px); letter-spacing: .22em; text-transform: uppercase; }
-.camera-preview__countdown-number { position: relative; z-index: 1; color: var(--cream); font-family: var(--display); font-size: clamp(190px, 28vw, 360px); font-weight: 900; letter-spacing: -.035em; line-height: .69; text-shadow: 7px 7px 0 var(--red), 12px 12px 0 rgb(23 13 16 / 70%); animation: countdown-strike .42s var(--ease-race) both; }
+.camera-preview__countdown-number { position: relative; z-index: 1; color: var(--cream); font-family: var(--display); font-size: clamp(190px, 28vw, 360px); font-weight: 900; letter-spacing: -.035em; line-height: .69; text-shadow: 7px 7px 0 var(--red), 12px 12px 0 rgb(23 13 16 / 70%); animation: countdown-strike .34s var(--ease-race) both; }
 .camera-preview__countdown .route-graphic { position: relative; z-index: 1; width: 240px; height: 54px; margin-top: 18px; }
 .camera-preview__countdown .route-graphic__road-edge { stroke: var(--cream); }
 .camera-preview__countdown .route-graphic__road { stroke: var(--red-dark); }
@@ -568,9 +579,14 @@ button:focus-visible {
 @keyframes picture-snap-in { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: scale(1); } }
 @keyframes finish-hit { from { opacity: 0; transform: translateY(17px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes poster-type-arrive { from { opacity: 0; transform: translate(-24px, 15px) skewX(-3deg); } to { opacity: 1; transform: translate(0, 0) skewX(0); } }
+@keyframes poster-type-follow { from { opacity: 0; transform: translate(-16px, 10px); clip-path: inset(0 0 100%); } to { opacity: 1; transform: translate(0, 0); clip-path: inset(0); } }
+@keyframes version-settle { from { opacity: .35; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes cta-enter { from { opacity: 0; transform: translateX(-22px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes stripe-drift { from { transform: rotate(-34deg) translate3d(-8px, 3px, 0); } to { transform: rotate(-34deg) translate3d(8px, -3px, 0); } }
+@keyframes route-progress { 0%, 4% { stroke-dashoffset: 100; } 76% { stroke-dashoffset: 0; } 82% { stroke-dashoffset: 0; } 98%, 100% { stroke-dashoffset: 100; } }
+@keyframes status-breathe { 0%, 100% { opacity: 1; } 50% { opacity: .68; } }
 @keyframes frame-mark-in { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
-@keyframes countdown-strike { from { opacity: 0; transform: translateY(25px) scale(.83); clip-path: inset(20% 0); } to { opacity: 1; transform: translateY(0) scale(1); clip-path: inset(0); } }
+@keyframes countdown-strike { from { opacity: 0; transform: translateY(-24px) scale(1.045); clip-path: inset(0 0 20%); } to { opacity: 1; transform: translateY(0) scale(1); clip-path: inset(0); } }
 @keyframes photo-slam { from { opacity: .6; transform: scale(1.04); clip-path: inset(4%); } to { opacity: 1; transform: scale(1); clip-path: inset(0); } }
 @keyframes finish-type-in { from { opacity: 0; transform: translateX(36px); clip-path: inset(0 0 0 30%); } to { opacity: 1; transform: translateX(0); clip-path: inset(0); } }
 @keyframes finish-mark-pop { from { opacity: 0; transform: scale(.65) rotate(-18deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
@@ -663,6 +679,7 @@ button:focus-visible {
     transition-duration: .01ms !important;
   }
   .route-graphic__runner { display: none; }
+  .route-graphic--welcome .route-graphic__progress { animation: none; stroke-dashoffset: 100; }
   .route-graphic--welcome .route-graphic__marker,
   .route-graphic--welcome .route-graphic__marker-halo { opacity: 1; }
 }

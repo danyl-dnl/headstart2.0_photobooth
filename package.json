@@ -10,6 +10,7 @@
     "start": "npm run build && electron .",
     "build": "npm run build:renderer && npm run build:electron",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
+    "test:delivery": "node --test tests/*.test.cjs",
     "build:renderer": "vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "package": "npm run build && electron-builder",

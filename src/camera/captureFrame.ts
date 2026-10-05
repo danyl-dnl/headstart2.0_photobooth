@@ -1,3 +1,5 @@
+import type { CapturedPhotoData } from '../types/photo';
+
 export class CameraFrameError extends Error {
   constructor() {
     super('The camera frame is not ready to capture.');
@@ -5,7 +7,7 @@ export class CameraFrameError extends Error {
   }
 }
 
-export function captureVideoFrame(video: HTMLVideoElement): Promise<Blob> {
+export function captureVideoFrame(video: HTMLVideoElement): Promise<CapturedPhotoData> {
   if (
     video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
     || video.videoWidth === 0
@@ -25,13 +27,20 @@ export function captureVideoFrame(video: HTMLVideoElement): Promise<Blob> {
   }
 
   // The preview is mirrored in CSS only. Drawing the source video directly keeps the saved photo natural.
+  const capturedAt = Date.now();
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
         if (blob) {
-          resolve(blob);
+          resolve({
+            blob,
+            capturedAt,
+            mimeType: blob.type || 'image/jpeg',
+            width: canvas.width,
+            height: canvas.height,
+          });
           return;
         }
 

@@ -2,9 +2,9 @@ import ActionButton from '../components/ActionButton';
 import RouteGraphic from '../components/RouteGraphic';
 import { Check, RotateCcw } from 'lucide-react';
 
-type PreviewScreenProps = { photoUrl: string; onRetake: () => void; onUsePhoto: () => void };
+type PreviewScreenProps = { photoUrl: string; isDeliveryPending: boolean; onRetake: () => void; onUsePhoto: () => void };
 
-export default function PreviewScreen({ photoUrl, onRetake, onUsePhoto }: PreviewScreenProps) {
+export default function PreviewScreen({ photoUrl, isDeliveryPending, onRetake, onUsePhoto }: PreviewScreenProps) {
   return (
     <div className="flow-screen preview-screen">
       <div className="preview-screen__heading">
@@ -24,8 +24,8 @@ export default function PreviewScreen({ photoUrl, onRetake, onUsePhoto }: Previe
       <div className="preview-screen__actions">
         <span className="preview-screen__caption">Excel 2026 <i /> Photo 01</span>
         <div className="screen-actions">
-        <ActionButton variant="secondary" onClick={onRetake}><RotateCcw size={17} strokeWidth={1.8} aria-hidden="true" />Retake</ActionButton>
-        <ActionButton onClick={onUsePhoto}><Check size={18} strokeWidth={1.8} aria-hidden="true" /><span>Use photo</span></ActionButton>
+        <ActionButton disabled={isDeliveryPending} variant="secondary" onClick={onRetake}><RotateCcw size={17} strokeWidth={1.8} aria-hidden="true" />Retake</ActionButton>
+        <ActionButton disabled={isDeliveryPending} onClick={onUsePhoto}><Check size={18} strokeWidth={1.8} aria-hidden="true" /><span>Use photo</span></ActionButton>
         </div>
       </div>
     </div>

@@ -2,9 +2,10 @@ import { useCallback, useState } from 'react';
 import CameraPreview from '../camera/CameraPreview';
 import ActionButton from '../components/ActionButton';
 import RouteGraphic from '../components/RouteGraphic';
+import type { CapturedPhotoData } from '../types/photo';
 import { Camera, ChevronLeft } from 'lucide-react';
 
-type CameraScreenProps = { onPhotoCaptured: (photo: Blob) => void; onBack: () => void };
+type CameraScreenProps = { onPhotoCaptured: (photo: CapturedPhotoData) => void; onBack: () => void };
 
 export default function CameraScreen({ onPhotoCaptured, onBack }: CameraScreenProps) {
   const [captureRequest, setCaptureRequest] = useState(0);
